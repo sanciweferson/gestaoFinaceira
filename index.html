@@ -333,6 +333,100 @@
 
     .modal-footer { padding: 12px 20px 18px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); }
 
+    .modal-grande { max-width: 900px; }
+
+    .relatorio-pro { display: flex; flex-direction: column; gap: 18px; }
+
+    .relatorio-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .relatorio-header h4 { font-size: 1.1rem; margin-bottom: 6px; }
+    .relatorio-header p  { font-size: .82rem; color: var(--text2); }
+
+    .relatorio-bloco {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .relatorio-bloco h5 {
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text2);
+      margin-bottom: 12px;
+    }
+
+    .relatorio-metricas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .relatorio-metrica {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+
+    .relatorio-metrica .label {
+      font-size: .74rem;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+
+    .relatorio-metrica .valor {
+      font-size: 1.15rem;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    .relatorio-metrica .valor.positivo { color: var(--accent); }
+    .relatorio-metrica .valor.negativo { color: var(--danger); }
+
+    .relatorio-lista { display: flex; flex-direction: column; gap: 10px; }
+
+    .relatorio-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+
+    .relatorio-item-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .relatorio-item-titulo { font-size: .87rem; font-weight: 500; }
+    .relatorio-item-sub    { font-size: .76rem; color: var(--text3); }
+
+    .relatorio-item-valor {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    .relatorio-vazio {
+      color: var(--text3);
+      font-size: .83rem;
+      padding: 8px 0;
+    }
+
     @keyframes popIn {
       from { opacity: 0; transform: scale(.95) translateY(6px); }
       to   { opacity: 1; transform: scale(1)   translateY(0); }
@@ -341,6 +435,7 @@
     .empty { text-align: center; padding: 32px; color: var(--text3); font-size: .85rem; }
 
     @media (max-width: 700px) {
+      .modal-grande { max-width: 100%; }
       table, thead, tbody, th, td, tr { display: block; }
       thead { display: none; }
       tr { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); padding: 10px; }
@@ -364,6 +459,7 @@
     <div class="topbar-right">
       <button class="btn-icon tema-btn" onclick="alternarTema()" title="Alternar tema">☀️</button>
       <button class="btn-ghost" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <button class="btn-primary" onclick="gerarRelatorioPro()">📊 Relatório PRO</button>
       <button class="btn-success" onclick="carregarExemplo()">Carregar exemplo</button>
     </div>
   </div>
@@ -627,27 +723,81 @@
   // ─── MODAL ───────────────────────────────────────────────
   function fecharModal() { document.getElementById('modalOverlay').classList.remove('ativo'); }
 
+  // Abre o modal padrão do sistema.
+  // Essa versão é usada para avisos, erros e sucessos simples.
   function abrirModal(msg, titulo = 'Aviso', tipo = 'aviso') {
-    const box     = document.getElementById('modalBox');
-    const tituloEl= document.getElementById('modalTitulo');
-    const msgEl   = document.getElementById('modalMensagem');
-    const iconeEl = document.getElementById('modalIcone');
-    const btnCanc = document.getElementById('modalCancelar');
-    const btnConf = document.getElementById('modalConfirmar');
-    const btnFech = document.getElementById('modalFechar');
-    const overlay = document.getElementById('modalOverlay');
+    const box      = document.getElementById('modalBox');
+    const tituloEl = document.getElementById('modalTitulo');
+    const msgEl    = document.getElementById('modalMensagem');
+    const iconeEl  = document.getElementById('modalIcone');
+    const btnCanc  = document.getElementById('modalCancelar');
+    const btnConf  = document.getElementById('modalConfirmar');
+    const btnFech  = document.getElementById('modalFechar');
+    const overlay  = document.getElementById('modalOverlay');
 
+    // Reseta o modal para o modo normal.
     box.className = `modal ${tipo}`;
+    box.classList.remove('modal-grande');
+
     tituloEl.textContent = titulo;
-    msgEl.textContent    = msg;
+
+    // innerHTML permite exibir textos com quebra de linha ou HTML formatado.
+    // Como aqui o conteúdo é gerado pelo próprio sistema, fica seguro usar.
+    msgEl.innerHTML = msg;
+
     iconeEl.textContent  = tipo === 'sucesso' ? '✓' : tipo === 'erro' ? '✕' : '!';
     btnCanc.style.display = 'none';
     btnConf.textContent   = 'OK';
     overlay.classList.add('ativo');
 
     return new Promise(res => {
-      btnFech.onclick = overlay.onclick = (e) => { if (e.target === overlay || e.target === btnFech) { fecharModal(); res(false); } };
-      btnConf.onclick = () => { fecharModal(); res(true); };
+      btnFech.onclick = overlay.onclick = (e) => {
+        if (e.target === overlay || e.target === btnFech) {
+          fecharModal();
+          res(false);
+        }
+      };
+
+      btnConf.onclick = () => {
+        fecharModal();
+        res(true);
+      };
+    });
+  }
+
+  // Abre um modal maior, pensado para mostrar o relatório detalhado.
+  function abrirModalRelatorio(html, titulo = 'Relatório PRO', tipo = 'aviso') {
+    const box      = document.getElementById('modalBox');
+    const tituloEl = document.getElementById('modalTitulo');
+    const msgEl    = document.getElementById('modalMensagem');
+    const iconeEl  = document.getElementById('modalIcone');
+    const btnCanc  = document.getElementById('modalCancelar');
+    const btnConf  = document.getElementById('modalConfirmar');
+    const btnFech  = document.getElementById('modalFechar');
+    const overlay  = document.getElementById('modalOverlay');
+
+    // Aqui o box recebe a classe de modal grande.
+    box.className = `modal modal-grande ${tipo}`;
+    tituloEl.textContent = titulo;
+    msgEl.innerHTML = html;
+    iconeEl.textContent = '📊';
+
+    btnCanc.style.display = 'none';
+    btnConf.textContent   = 'Fechar';
+    overlay.classList.add('ativo');
+
+    return new Promise(res => {
+      btnFech.onclick = overlay.onclick = (e) => {
+        if (e.target === overlay || e.target === btnFech) {
+          fecharModal();
+          res(false);
+        }
+      };
+
+      btnConf.onclick = () => {
+        fecharModal();
+        res(true);
+      };
     });
   }
 
@@ -1136,6 +1286,291 @@
     document.getElementById('filtroCategoria').value = 'todas';
     document.getElementById('filtroMes').value       = '';
     atualizarTela();
+  }
+
+  // ─── RELATÓRIO PRO ────────────────────────────────────────
+  // Monta um texto curto mostrando quais filtros estão ativos no momento.
+  // Isso ajuda o usuário a entender sobre qual período o relatório foi gerado.
+  function textoPeriodoFiltro() {
+    const mes = document.getElementById('filtroMes').value;
+    const tipo = document.getElementById('filtroTipo').value;
+    const categoria = document.getElementById('filtroCategoria').value;
+
+    const partes = [];
+
+    if (mes) {
+      const [ano, m] = mes.split('-');
+      partes.push(`Mês filtrado: ${m}/${ano}`);
+    } else {
+      partes.push('Período: todos os meses');
+    }
+
+    partes.push(`Tipo: ${tipo === 'todos' ? 'todos' : tipo}`);
+    partes.push(`Categoria: ${categoria === 'todas' ? 'todas' : categoria}`);
+
+    return partes.join(' · ');
+  }
+
+  // Soma os gastos manuais marcados como pagos e pendentes.
+  // Parcelamentos automáticos ficam de fora porque já possuem um fluxo próprio.
+  function obterResumoPagamentosManuais(itens) {
+    let totalPago = 0;
+    let totalPendente = 0;
+    let qtdPago = 0;
+    let qtdPendente = 0;
+
+    for (const item of itens) {
+      if (item.tipo === 'gasto' && item.origem !== 'parcelamento') {
+        if (item.pago) {
+          totalPago += item.valor;
+          qtdPago++;
+        } else {
+          totalPendente += item.valor;
+          qtdPendente++;
+        }
+      }
+    }
+
+    return { totalPago, totalPendente, qtdPago, qtdPendente };
+  }
+
+  // Ordena as categorias do maior para o menor valor.
+  // O parâmetro limite controla quantas categorias aparecem no relatório.
+  function obterTopCategorias(resumoCategorias, limite = 5) {
+    return Object.entries(resumoCategorias)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limite);
+  }
+
+  // Seleciona apenas os gastos e retorna os maiores valores.
+  // Isso serve para mostrar os maiores impactos do período.
+  function obterMaioresGastos(itens, limite = 5) {
+    return itens
+      .filter(item => item.tipo === 'gasto')
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, limite);
+  }
+
+  // Faz o download de um arquivo TXT com o conteúdo do relatório.
+  function baixarRelatorioTXT(conteudo, nomeArquivo = null) {
+    const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+
+    a.href = url;
+    a.download = nomeArquivo || `relatorio-financeiro-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  // Gera a versão visual do relatório e mostra no modal grande.
+  function gerarRelatorioPro() {
+    const itens = lancamentosFiltrados();
+    const totais = calcularTotais();
+    const pagamentos = obterResumoPagamentosManuais(itens);
+    const topCategorias = obterTopCategorias(totais.resumoCategorias, 5);
+    const maioresGastos = obterMaioresGastos(itens, 5);
+
+    // Separa parcelamentos ativos dos já concluídos.
+    const parcelamentosAtivos = parcelamentos.filter(p => p.parcelasPagas < p.totalParcelas);
+    const parcelamentosConcluidos = parcelamentos.filter(p => p.parcelasPagas >= p.totalParcelas);
+
+    const qtdEntradas = itens.filter(i => i.tipo === 'entrada').length;
+    const qtdGastos = itens.filter(i => i.tipo === 'gasto').length;
+
+    const saldoClass = totais.saldo >= 0 ? 'positivo' : 'negativo';
+
+    // Monta a lista HTML das categorias com maior gasto.
+    const topCategoriasHTML = topCategorias.length
+      ? `
+        <div class="relatorio-lista">
+          ${topCategorias.map(([categoria, valor], index) => `
+            <div class="relatorio-item">
+              <div class="relatorio-item-left">
+                <div class="relatorio-item-titulo">#${index + 1} · ${categoria}</div>
+                <div class="relatorio-item-sub">Participação nas despesas</div>
+              </div>
+              <div class="relatorio-item-valor">${fmt(valor)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `
+      : `<div class="relatorio-vazio">Nenhuma categoria de gasto encontrada no filtro atual.</div>`;
+
+    // Monta a lista HTML dos maiores gastos do período.
+    const maioresGastosHTML = maioresGastos.length
+      ? `
+        <div class="relatorio-lista">
+          ${maioresGastos.map(item => `
+            <div class="relatorio-item">
+              <div class="relatorio-item-left">
+                <div class="relatorio-item-titulo">${item.descricao}</div>
+                <div class="relatorio-item-sub">
+                  ${item.categoria} · ${fmtData(item.data)} · ${item.origem === 'parcelamento' ? 'Parcelamento' : 'Manual'}
+                </div>
+              </div>
+              <div class="relatorio-item-valor">${fmt(item.valor)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `
+      : `<div class="relatorio-vazio">Nenhum gasto encontrado no filtro atual.</div>`;
+
+    // HTML final do relatório mostrado no modal.
+    const html = `
+      <div class="relatorio-pro">
+        <div class="relatorio-header">
+          <div>
+            <h4>Resumo financeiro detalhado</h4>
+            <p>${textoPeriodoFiltro()}</p>
+          </div>
+          <div>
+            <button class="btn-success" onclick="exportarRelatorioProTXT()">⬇ Baixar TXT</button>
+          </div>
+        </div>
+
+        <div class="relatorio-bloco">
+          <h5>Visão geral</h5>
+          <div class="relatorio-metricas">
+            <div class="relatorio-metrica">
+              <div class="label">Receitas</div>
+              <div class="valor positivo">${fmt(totais.totalEntradas)}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Despesas</div>
+              <div class="valor negativo">${fmt(totais.totalGastos)}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Saldo</div>
+              <div class="valor ${saldoClass}">${fmt(totais.saldo)}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Lançamentos</div>
+              <div class="valor">${itens.length}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Entradas</div>
+              <div class="valor">${qtdEntradas}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Gastos</div>
+              <div class="valor">${qtdGastos}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relatorio-bloco">
+          <h5>Status dos gastos manuais</h5>
+          <div class="relatorio-metricas">
+            <div class="relatorio-metrica">
+              <div class="label">Total pago</div>
+              <div class="valor positivo">${fmt(pagamentos.totalPago)}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Total pendente</div>
+              <div class="valor negativo">${fmt(pagamentos.totalPendente)}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Qtd. pagos</div>
+              <div class="valor">${pagamentos.qtdPago}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Qtd. pendentes</div>
+              <div class="valor">${pagamentos.qtdPendente}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relatorio-bloco">
+          <h5>Parcelamentos</h5>
+          <div class="relatorio-metricas">
+            <div class="relatorio-metrica">
+              <div class="label">Ativos</div>
+              <div class="valor">${parcelamentosAtivos.length}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Concluídos</div>
+              <div class="valor">${parcelamentosConcluidos.length}</div>
+            </div>
+            <div class="relatorio-metrica">
+              <div class="label">Total cadastrados</div>
+              <div class="valor">${parcelamentos.length}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relatorio-bloco">
+          <h5>Top categorias</h5>
+          ${topCategoriasHTML}
+        </div>
+
+        <div class="relatorio-bloco">
+          <h5>Maiores gastos</h5>
+          ${maioresGastosHTML}
+        </div>
+      </div>
+    `;
+
+    abrirModalRelatorio(html, 'Relatório PRO', 'aviso');
+  }
+
+  // Gera a versão em texto puro do relatório para download.
+  function exportarRelatorioProTXT() {
+    const itens = lancamentosFiltrados();
+    const totais = calcularTotais();
+    const pagamentos = obterResumoPagamentosManuais(itens);
+    const topCategorias = obterTopCategorias(totais.resumoCategorias, 5);
+    const maioresGastos = obterMaioresGastos(itens, 5);
+
+    const parcelamentosAtivos = parcelamentos.filter(p => p.parcelasPagas < p.totalParcelas);
+    const parcelamentosConcluidos = parcelamentos.filter(p => p.parcelasPagas >= p.totalParcelas);
+
+    const linhas = [
+      'RELATÓRIO FINANCEIRO PRO',
+      '========================================',
+      textoPeriodoFiltro(),
+      '',
+      'VISÃO GERAL',
+      `Receitas: ${fmt(totais.totalEntradas)}`,
+      `Despesas: ${fmt(totais.totalGastos)}`,
+      `Saldo: ${fmt(totais.saldo)}`,
+      `Lançamentos: ${itens.length}`,
+      '',
+      'STATUS DOS GASTOS MANUAIS',
+      `Total pago: ${fmt(pagamentos.totalPago)}`,
+      `Total pendente: ${fmt(pagamentos.totalPendente)}`,
+      `Quantidade paga: ${pagamentos.qtdPago}`,
+      `Quantidade pendente: ${pagamentos.qtdPendente}`,
+      '',
+      'PARCELAMENTOS',
+      `Ativos: ${parcelamentosAtivos.length}`,
+      `Concluídos: ${parcelamentosConcluidos.length}`,
+      `Total cadastrados: ${parcelamentos.length}`,
+      '',
+      'TOP CATEGORIAS'
+    ];
+
+    if (topCategorias.length) {
+      topCategorias.forEach(([categoria, valor], i) => {
+        linhas.push(`${i + 1}. ${categoria}: ${fmt(valor)}`);
+      });
+    } else {
+      linhas.push('Nenhuma categoria encontrada.');
+    }
+
+    linhas.push('');
+    linhas.push('MAIORES GASTOS');
+
+    if (maioresGastos.length) {
+      maioresGastos.forEach((item, i) => {
+        linhas.push(`${i + 1}. ${item.descricao} | ${item.categoria} | ${fmtData(item.data)} | ${fmt(item.valor)}`);
+      });
+    } else {
+      linhas.push('Nenhum gasto encontrado.');
+    }
+
+    baixarRelatorioTXT(linhas.join('\n'));
   }
 
   // ─── EXPORT CSV ───────────────────────────────────────────
