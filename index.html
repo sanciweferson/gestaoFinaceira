@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle Financeiro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────── */
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --surface2:   #1c2230;
+      --border:     #2a3340;
+      --text:       #e6edf3;
+      --text2:      #8b949e;
+      --text3:      #6e7681;
+      --accent:     #3fb950;
+      --accent2:    #58a6ff;
+      --danger:     #f85149;
+      --warning:    #d29922;
+      --radius:     12px;
+      --radius-sm:  8px;
+      --shadow:     0 4px 24px rgba(0,0,0,.4);
+      --font:       'DM Sans', sans-serif;
+      --mono:       'DM Mono', monospace;
+      --transition: .18s ease;
+    }
+
+    [data-tema="claro"] {
+      --bg:       #f0f4f8;
+      --surface:  #ffffff;
+      --surface2: #f6f8fa;
+      --border:   #d8dee4;
+      --text:     #1c2230;
+      --text2:    #57606a;
+      --text3:    #8c949e;
+      --shadow:   0 4px 24px rgba(0,0,0,.1);
+    }
+
+    /* ─── RESET ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    /* ─── LAYOUT ─────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .topbar-left h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+    }
+
+    .topbar-left p {
+      font-size: .85rem;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+
+    .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+    /* ─── CARD ───────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ─── GRID ───────────────────────────────────────── */
+    .grid { display: grid; gap: 12px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+    @media (max-width: 700px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ─── RESUMO CARDS ───────────────────────────────── */
+    .resumo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .resumo-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .resumo-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent-line, var(--accent));
+    }
+
+    .resumo-card.receita  { --accent-line: var(--accent); }
+    .resumo-card.despesa  { --accent-line: var(--danger); }
+    .resumo-card.saldo    { --accent-line: var(--accent2); }
+    .resumo-card.alimento { --accent-line: var(--warning); }
+
+    .resumo-label {
+      font-size: .75rem;
+      color: var(--text2);
+      font-weight: 500;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .resumo-valor {
+      font-size: 1.55rem;
+      font-weight: 600;
+      font-family: var(--mono);
+      letter-spacing: -.02em;
+    }
+
+    .resumo-valor.positivo { color: var(--accent); }
+    .resumo-valor.negativo { color: var(--danger); }
+
+    .resumo-sub {
+      font-size: .75rem;
+      color: var(--text3);
+      margin-top: 4px;
+    }
+
+    /* ─── BARRA DE PROGRESSO ─────────────────────────── */
+    .progress-wrap { margin-top: 10px; }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .72rem;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+
+    .progress-bar {
+      height: 5px;
+      border-radius: 999px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .5s ease;
+    }
+
+    .progress-fill.ok      { background: var(--accent); }
+    .progress-fill.alerta  { background: var(--warning); }
+    .progress-fill.excesso { background: var(--danger); }
+
+    /* ─── FORMULÁRIO ─────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    label {
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text2);
+    }
+
+    input, select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 9px 12px;
+      font-size: .875rem;
+      font-family: var(--font);
+      width: 100%;
+      transition: border-color var(--transition);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent2);
+    }
+
+    input[type="number"] { font-family: var(--mono); }
+
+    select option { background: var(--surface); }
+
+    /* ─── BOTÕES ─────────────────────────────────────── */
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: .85rem;
+      font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: opacity var(--transition), transform var(--transition);
+      white-space: nowrap;
+    }
+
+    button:active { transform: scale(.97); }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+
+    .btn-primary   { background: var(--accent2); color: #fff; }
+    .btn-success   { background: var(--accent); color: #0d1117; }
+    .btn-danger    { background: var(--danger); color: #fff; }
+    .btn-warning   { background: var(--warning); color: #0d1117; }
+    .btn-ghost     { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-icon      { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); padding: 8px 10px; }
+
+    button:not(:disabled):hover { opacity: .85; }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+    /* ─── TABELA ─────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .03em;
+    }
+
+    .tag-gasto   { background: rgba(248,81,73,.15); color: var(--danger); }
+    .tag-entrada { background: rgba(63,185,80,.15); color: var(--accent); }
+    .tag-fixo, .tag-divida { background: rgba(88,166,255,.12); color: var(--accent2); }
+    .tag-alimentacao { background: rgba(210,153,34,.15); color: var(--warning); }
+    .tag-saude   { background: rgba(63,185,80,.15); color: var(--accent); }
+    .tag-transporte, .tag-pessoal { background: rgba(139,148,158,.15); color: var(--text2); }
+    .tag-imprevisto, .tag-extra { background: rgba(248,81,73,.1); color: #e88; }
+
+    .valor-neg { color: var(--danger); font-family: var(--mono); font-size: .875rem; }
+    .valor-pos { color: var(--accent); font-family: var(--mono); font-size: .875rem; }
+
+    .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+    .acoes button { padding: 5px 10px; font-size: .78rem; }
+
+    /* ─── ALERTA ─────────────────────────────────────── */
+    .alerta-box {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      font-size: .83rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alerta-box.danger  { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: #f98080; }
+    .alerta-box.warning { background: rgba(210,153,34,.1); border: 1px solid rgba(210,153,34,.3); color: #d9a84b; }
+
+    /* ─── CHART ──────────────────────────────────────── */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-canvas-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .chart-legenda {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .legenda-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .83rem;
+    }
+
+    .legenda-cor {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .legenda-nome { color: var(--text2); flex: 1; }
+    .legenda-valor { font-family: var(--mono); font-weight: 500; }
+    .legenda-pct { font-size: .75rem; color: var(--text3); min-width: 36px; text-align: right; }
+
+    /* ─── PARCELAMENTOS ──────────────────────────────── */
+    .parc-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .parc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .parc-desc { font-weight: 500; font-size: .9rem; }
+    .parc-meta { font-size: .78rem; color: var(--text2); margin-top: 2px; }
+
+    .parc-valor {
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--danger);
+    }
+
+    .parc-progress { margin-top: 12px; }
+    .parc-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .72rem;
+      color: var(--text3);
+      margin-bottom: 5px;
+    }
+
+    .status-finalizado { color: var(--text3); }
+    .status-pendente   { color: var(--warning); }
+
+    /* ─── FILTRO INFO ────────────────────────────────── */
+    .filtro-info {
+      margin-top: 10px;
+      font-size: .8rem;
+      color: var(--text3);
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    /* ─── SEPARADOR ──────────────────────────────────── */
+    .section-gap { margin-top: 20px; }
+
+    /* ─── TEMA TOGGLE ────────────────────────────────── */
+    .tema-btn { font-size: 1rem; }
+
+    /* ─── MODAL ──────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal-overlay.ativo { display: flex; }
+
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 32px 80px rgba(0,0,0,.5);
+      overflow: hidden;
+      animation: popIn .18s ease;
+    }
+
+    .modal-top { height: 4px; }
+    .modal.erro   .modal-top { background: var(--danger); }
+    .modal.aviso  .modal-top { background: var(--warning); }
+    .modal.sucesso .modal-top { background: var(--accent); }
+
+    .modal-header {
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h3 { font-size: 1rem; font-weight: 600; }
+
+    .modal-close {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      width: 28px;
+      height: 28px;
+      font-size: 1rem;
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .modal-body {
+      padding: 18px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .modal-icone {
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .modal.erro    .modal-icone { background: rgba(248,81,73,.15); color: var(--danger); }
+    .modal.aviso   .modal-icone { background: rgba(210,153,34,.15); color: var(--warning); }
+    .modal.sucesso .modal-icone { background: rgba(63,185,80,.15); color: var(--accent); }
+
+    .modal-mensagem { font-size: .875rem; line-height: 1.55; color: var(--text); padding-top: 6px; }
+
+    .modal-footer {
+      padding: 12px 20px 18px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.95) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ─── EMPTY STATE ────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 32px;
+      color: var(--text3);
+      font-size: .85rem;
+    }
+
+    /* ─── MOBILE TABLE ───────────────────────────────── */
+    @media (max-width: 700px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr { margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface2); padding: 10px; }
+      td { border: none; padding: 6px 4px; font-size: .82rem; }
+    }
+
+    /* ─── SCROLLBAR ──────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>💰 Controle Financeiro</h1>
+      <p>Gestão pessoal de receitas, despesas e parcelamentos</p>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon tema-btn" onclick="alternarTema()" title="Alternar tema">☀️</button>
+      <button class="btn-ghost" onclick="exportarCSV()">⬇ Exportar CSV</button>
+      <button class="btn-success" onclick="carregarExemplo()">Carregar exemplo</button>
+    </div>
+  </div>
+
+  <!-- CONFIGURAÇÃO -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Configuração do mês</div>
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="rendaMensal">Renda mensal base</label>
+        <input type="number" id="rendaMensal" value="4750" oninput="atualizarTela()" />
+      </div>
+      <div class="field">
+        <label for="limiteAlimentacao">Limite de alimentação</label>
+        <input type="number" id="limiteAlimentacao" value="1000" oninput="atualizarTela()" />
+      </div>
+      <div class="field">
+        <label for="metaDivida">Meta mensal para dívidas</label>
+        <input type="number" id="metaDivida" value="250" oninput="atualizarTela()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMO -->
+  <div class="resumo-grid" id="resumoCards"></div>
+  <div id="alertasContainer"></div>
+
+  <!-- BARRAS DE PROGRESSO -->
+  <div class="card" id="progressCard">
+    <div class="card-title"><span class="dot"></span> Metas do período</div>
+    <div id="progressBars"></div>
+  </div>
+
+  <!-- GRÁFICO -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Distribuição por categoria</div>
+    <div id="chartContainer">
+      <div class="empty">Nenhum gasto registrado para exibir o gráfico.</div>
+    </div>
+  </div>
+
+  <!-- PARCELAMENTOS CADASTRADOS -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Parcelamentos automáticos</div>
+    <div id="listaParcelamentos"></div>
+  </div>
+
+  <!-- NOVO LANÇAMENTO -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Novo lançamento manual</div>
+    <input type="hidden" id="editandoId" value="" />
+    <div class="grid grid-auto">
+      <div class="field">
+        <label for="descricao">Descrição</label>
+        <input type="text" id="descricao" placeholder="Ex: Uber para o trabalho" />
+      </div>
+      <div class="field">
+        <label for="valor">Valor (R$)</label>
+        <input type="number" id="valor" placeholder="0,00" />
+      </div>
+      <div class="field">
+        <label for="tipo">Tipo</label>
+        <select id="tipo">
+          <option value="gasto">Gasto</option>
+          <option value="entrada">Entrada</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="categoria">Categoria</label>
+        <select id="categoria">
+          <option value="fixo">Fixo</option>
+          <option value="alimentacao">Alimentação</option>
+          <option value="transporte">Transporte</option>
+          <option value="saude">Saúde</option>
+          <option value="pessoal">Pessoal</option>
+          <option value="divida">Dívida</option>
+          <option value="imprevisto">Imprevisto</option>
+          <option value="extra">Extra</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="data">Data</label>
+        <input type="date" id="data" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button id="btnSalvarLancamento" class="btn-primary" onclick="salvarMovimentacao()">＋ Registrar</button>
+      <button class="btn-ghost" onclick="limparFormulario()">Cancelar edição</button>
+      <button class="btn-danger" style="margin-left:auto" onclick="limparTudo()">🗑 Excluir tudo</button>
+    </div>
+  </div>
+
+  <!-- CADASTRO PARCELAMENTO -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Cadastrar parcelamento automático</div>
+    <div class="grid grid-auto">
+      <div class="field">
+        <label for="parcDescricao">Descrição</label>
+        <input type="text" id="parcDescricao" placeholder="Ex: Livros" />
+      </div>
+      <div class="field">
+        <label for="parcValor">Valor da parcela (R$)</label>
+        <input type="number" id="parcValor" placeholder="0,00" />
+      </div>
+      <div class="field">
+        <label for="parcCategoria">Categoria</label>
+        <select id="parcCategoria">
+          <option value="divida">Dívida</option>
+          <option value="pessoal">Pessoal</option>
+          <option value="fixo">Fixo</option>
+          <option value="saude">Saúde</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="parcTotal">Total de parcelas</label>
+        <input type="number" id="parcTotal" min="1" value="1" />
+      </div>
+      <div class="field">
+        <label for="parcPagas">Já pagas</label>
+        <input type="number" id="parcPagas" min="0" value="0" />
+      </div>
+      <div class="field">
+        <label for="parcPrimeiraData">Data da 1ª parcela</label>
+        <input type="date" id="parcPrimeiraData" />
+      </div>
+      <div class="field">
+        <label for="parcDiaVencimento">Dia do vencimento</label>
+        <input type="number" id="parcDiaVencimento" min="1" max="31" value="10" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-warning" onclick="adicionarParcelamentoAutomatico()">✚ Cadastrar parcelamento</button>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Filtros</div>
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="filtroTipo">Tipo</label>
+        <select id="filtroTipo" onchange="atualizarTela()">
+          <option value="todos">Todos</option>
+          <option value="gasto">Somente gastos</option>
+          <option value="entrada">Somente entradas</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filtroCategoria">Categoria</label>
+        <select id="filtroCategoria" onchange="atualizarTela()">
+          <option value="todas">Todas</option>
+          <option value="fixo">Fixo</option>
+          <option value="alimentacao">Alimentação</option>
+          <option value="transporte">Transporte</option>
+          <option value="saude">Saúde</option>
+          <option value="pessoal">Pessoal</option>
+          <option value="divida">Dívida</option>
+          <option value="imprevisto">Imprevisto</option>
+          <option value="extra">Extra</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filtroMes">Mês</label>
+        <input type="month" id="filtroMes" onchange="atualizarTela()" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="limparFiltros()">↺ Limpar filtros</button>
+    </div>
+    <div id="filtrosInfo" class="filtro-info">Exibindo todos os lançamentos.</div>
+  </div>
+
+  <!-- TABELA LANÇAMENTOS -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span> Lançamentos</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>Categoria</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th>Origem</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="listaMovimentacoes"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay" class="modal-overlay">
+  <div id="modalBox" class="modal aviso" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+    <div class="modal-top"></div>
+    <div class="modal-header">
+      <h3 id="modalTitulo">Aviso</h3>
+      <button id="modalFechar" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalIcone" class="modal-icone">!</div>
+      <p id="modalMensagem" class="modal-mensagem">Mensagem</p>
+    </div>
+    <div class="modal-footer">
+      <button id="modalCancelar" class="btn-ghost" type="button" style="display:none">Cancelar</button>
+      <button id="modalConfirmar" class="btn-primary" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── STORAGE ──────────────────────────────────────────────
+  const CH_MOV  = 'cf_movimentacoes_v4';
+  const CH_PARC = 'cf_parcelamentos_v4';
+
+  let movimentacoes = JSON.parse(localStorage.getItem(CH_MOV))  || [];
+  let parcelamentos  = JSON.parse(localStorage.getItem(CH_PARC)) || [];
+  let graficoInstance = null;
+
+  const CORES_CAT = {
+    fixo:        '#58a6ff',
+    alimentacao: '#d29922',
+    transporte:  '#8b949e',
+    saude:       '#3fb950',
+    pessoal:     '#a78bfa',
+    divida:      '#f85149',
+    imprevisto:  '#fb923c',
+    extra:       '#67e8f9',
+  };
+
+  // ─── UTILS ───────────────────────────────────────────────
+  function fmt(v)  { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  function fmtData(d) {
+    if (!d) return '—';
+    const [a, m, dia] = d.split('-');
+    return `${dia}/${m}/${a}`;
+  }
+
+  function salvarDados() {
+    localStorage.setItem(CH_MOV,  JSON.stringify(movimentacoes));
+    localStorage.setItem(CH_PARC, JSON.stringify(parcelamentos));
+  }
+
+  function alternarTema() {
+    const html = document.documentElement;
+    const atual = html.getAttribute('data-tema');
+    html.setAttribute('data-tema', atual === 'escuro' ? 'claro' : 'escuro');
+    document.querySelector('.tema-btn').textContent = atual === 'escuro' ? '🌙' : '☀️';
+    if (graficoInstance) {
+      graficoInstance.destroy();
+      graficoInstance = null;
+      renderizarGrafico(calcularTotais().resumoCategorias);
+    }
+  }
+
+  // ─── MODAL ───────────────────────────────────────────────
+  function fecharModal() { document.getElementById('modalOverlay').classList.remove('ativo'); }
+
+  function abrirModal(msg, titulo = 'Aviso', tipo = 'aviso') {
+    const box     = document.getElementById('modalBox');
+    const tituloEl= document.getElementById('modalTitulo');
+    const msgEl   = document.getElementById('modalMensagem');
+    const iconeEl = document.getElementById('modalIcone');
+    const btnCanc = document.getElementById('modalCancelar');
+    const btnConf = document.getElementById('modalConfirmar');
+    const btnFech = document.getElementById('modalFechar');
+    const overlay = document.getElementById('modalOverlay');
+
+    box.className = `modal ${tipo}`;
+    tituloEl.textContent = titulo;
+    msgEl.textContent    = msg;
+    iconeEl.textContent  = tipo === 'sucesso' ? '✓' : tipo === 'erro' ? '✕' : '!';
+    btnCanc.style.display = 'none';
+    btnConf.textContent   = 'OK';
+    overlay.classList.add('ativo');
+
+    return new Promise(res => {
+      btnFech.onclick = overlay.onclick = (e) => { if (e.target === overlay || e.target === btnFech) { fecharModal(); res(false); } };
+      btnConf.onclick = () => { fecharModal(); res(true); };
+    });
+  }
+
+  function confirmar(msg, titulo = 'Confirmar') {
+    const box     = document.getElementById('modalBox');
+    const tituloEl= document.getElementById('modalTitulo');
+    const msgEl   = document.getElementById('modalMensagem');
+    const iconeEl = document.getElementById('modalIcone');
+    const btnCanc = document.getElementById('modalCancelar');
+    const btnConf = document.getElementById('modalConfirmar');
+    const btnFech = document.getElementById('modalFechar');
+    const overlay = document.getElementById('modalOverlay');
+
+    box.className = 'modal aviso';
+    tituloEl.textContent  = titulo;
+    msgEl.textContent     = msg;
+    iconeEl.textContent   = '?';
+    btnCanc.style.display = 'inline-flex';
+    btnConf.textContent   = 'Confirmar';
+    overlay.classList.add('ativo');
+
+    return new Promise(res => {
+      const fechar = (v) => { fecharModal(); res(v); };
+      btnFech.onclick  = () => fechar(false);
+      btnCanc.onclick  = () => fechar(false);
+      btnConf.onclick  = () => fechar(true);
+      overlay.onclick  = (e) => { if (e.target === overlay) fechar(false); };
+    });
+  }
+
+  // ─── PARCELAMENTOS ────────────────────────────────────────
+  function montarDataVencimento(ano, mes, dia) {
+    const ultimo = new Date(ano, mes, 0).getDate();
+    return `${ano}-${String(mes).padStart(2,'0')}-${String(Math.min(dia, ultimo)).padStart(2,'0')}`;
+  }
+
+  function proximaDataParc(p) {
+    if (p.parcelasPagas >= p.totalParcelas) return null;
+    const base  = new Date(p.primeiraData + 'T12:00:00');
+    const mesAbs = base.getFullYear() * 12 + base.getMonth() + p.parcelasPagas;
+    const ano   = Math.floor(mesAbs / 12);
+    const mes   = (mesAbs % 12) + 1;
+    return montarDataVencimento(ano, mes, p.diaVencimento);
+  }
+
+  function gerarMovimentacoesParcelamentos() {
+    return parcelamentos
+      .filter(p => p.parcelasPagas < p.totalParcelas)
+      .map(p => ({
+        id: `auto-${p.id}`,
+        descricao: p.descricao,
+        valor: p.valorParcela,
+        tipo: 'gasto',
+        categoria: p.categoria,
+        data: proximaDataParc(p),
+        origem: 'parcelamento',
+        parcelamentoId: p.id,
+        parcelaAtual: p.parcelasPagas + 1,
+        totalParcelas: p.totalParcelas
+      }));
+  }
+
+  function todosLancamentos() {
+    return [...movimentacoes, ...gerarMovimentacoesParcelamentos()];
+  }
+
+  function lancamentosFiltrados() {
+    const tipo = document.getElementById('filtroTipo').value;
+    const cat  = document.getElementById('filtroCategoria').value;
+    const mes  = document.getElementById('filtroMes').value;
+
+    return todosLancamentos()
+      .filter(i =>
+        (tipo === 'todos' || i.tipo === tipo) &&
+        (cat  === 'todas' || i.categoria === cat) &&
+        (!mes || (i.data && i.data.startsWith(mes)))
+      )
+      .sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+  }
+
+  // ─── CÁLCULOS ─────────────────────────────────────────────
+  function calcularTotais() {
+    const rendaBase       = Number(document.getElementById('rendaMensal').value) || 0;
+    const filtroMes       = document.getElementById('filtroMes').value;
+    const itens           = lancamentosFiltrados();
+    let totalEntradas     = filtroMes ? 0 : rendaBase; // Renda base só conta quando filtro de mês está ativo corretamente
+    let totalGastos       = 0;
+    let totalAlimentacao  = 0;
+    const resumoCategorias = {};
+
+    // Se há filtro de mês, inclui a renda base como entrada daquele mês
+    if (filtroMes) totalEntradas = rendaBase;
+
+    for (const i of itens) {
+      if (i.tipo === 'entrada') {
+        totalEntradas += i.valor;
+      } else {
+        totalGastos += i.valor;
+        resumoCategorias[i.categoria] = (resumoCategorias[i.categoria] || 0) + i.valor;
+        if (i.categoria === 'alimentacao') totalAlimentacao += i.valor;
+      }
+    }
+
+    return {
+      totalEntradas,
+      totalGastos,
+      saldo: totalEntradas - totalGastos,
+      totalAlimentacao,
+      resumoCategorias
+    };
+  }
+
+  // ─── RENDER RESUMO ────────────────────────────────────────
+  function atualizarResumoCards() {
+    const t = calcularTotais();
+    const lim = Number(document.getElementById('limiteAlimentacao').value) || 0;
+
+    const saldoClass = t.saldo >= 0 ? 'positivo' : 'negativo';
+
+    document.getElementById('resumoCards').innerHTML = `
+      <div class="resumo-card receita">
+        <div class="resumo-label">Receitas totais</div>
+        <div class="resumo-valor positivo">${fmt(t.totalEntradas)}</div>
+        <div class="resumo-sub">Inclui renda base configurada</div>
+      </div>
+      <div class="resumo-card despesa">
+        <div class="resumo-label">Despesas totais</div>
+        <div class="resumo-valor negativo">${fmt(t.totalGastos)}</div>
+        <div class="resumo-sub">${Object.keys(t.resumoCategorias).length} categoria(s)</div>
+      </div>
+      <div class="resumo-card saldo">
+        <div class="resumo-label">Saldo do período</div>
+        <div class="resumo-valor ${saldoClass}">${fmt(t.saldo)}</div>
+        <div class="resumo-sub">${t.saldo >= 0 ? '✓ Positivo' : '✕ Negativo'}</div>
+      </div>
+      <div class="resumo-card alimento">
+        <div class="resumo-label">Alimentação</div>
+        <div class="resumo-valor">${fmt(t.totalAlimentacao)}</div>
+        <div class="resumo-sub">Limite: ${fmt(lim)}</div>
+      </div>
+    `;
+  }
+
+  function atualizarAlertas() {
+    const t   = calcularTotais();
+    const lim = Number(document.getElementById('limiteAlimentacao').value) || 0;
+    const meta= Number(document.getElementById('metaDivida').value) || 0;
+    const dividas = t.resumoCategorias.divida || 0;
+    const alertas = [];
+
+    if (t.totalAlimentacao > lim && lim > 0)
+      alertas.push({ tipo: 'danger', msg: `⚠ Alimentação acima do limite: ${fmt(t.totalAlimentacao)} de ${fmt(lim)} permitidos.` });
+
+    if (dividas < meta && meta > 0)
+      alertas.push({ tipo: 'warning', msg: `⚠ Dívidas pagas: ${fmt(dividas)}. Meta definida: ${fmt(meta)}.` });
+
+    if (t.saldo < 0)
+      alertas.push({ tipo: 'danger', msg: `⚠ Saldo negativo no período filtrado: ${fmt(t.saldo)}.` });
+
+    document.getElementById('alertasContainer').innerHTML =
+      alertas.map(a => `<div class="alerta-box ${a.tipo}" style="margin-bottom:12px">${a.msg}</div>`).join('');
+  }
+
+  function atualizarProgressBars() {
+    const t    = calcularTotais();
+    const lim  = Number(document.getElementById('limiteAlimentacao').value) || 0;
+    const meta = Number(document.getElementById('metaDivida').value) || 0;
+    const dividas = t.resumoCategorias.divida || 0;
+
+    let html = '';
+
+    if (lim > 0) {
+      const pct   = Math.min((t.totalAlimentacao / lim) * 100, 100);
+      const cls   = pct >= 100 ? 'excesso' : pct >= 80 ? 'alerta' : 'ok';
+      html += `
+        <div style="margin-bottom:14px">
+          <div class="progress-label">
+            <span>Limite de alimentação</span>
+            <span>${fmt(t.totalAlimentacao)} / ${fmt(lim)} (${pct.toFixed(0)}%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }
+
+    if (meta > 0) {
+      const pct  = Math.min((dividas / meta) * 100, 100);
+      const cls  = pct >= 100 ? 'ok' : pct >= 50 ? 'alerta' : 'excesso';
+      html += `
+        <div>
+          <div class="progress-label">
+            <span>Meta de pagamento de dívidas</span>
+            <span>${fmt(dividas)} / ${fmt(meta)} (${pct.toFixed(0)}%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('progressBars').innerHTML = html || '<p style="color:var(--text3);font-size:.82rem">Configure limites acima para ver as barras de progresso.</p>';
+  }
+
+  // ─── GRÁFICO ──────────────────────────────────────────────
+  function renderizarGrafico(resumoCategorias) {
+    const container = document.getElementById('chartContainer');
+    const cats = Object.keys(resumoCategorias);
+
+    if (!cats.length) {
+      if (graficoInstance) { graficoInstance.destroy(); graficoInstance = null; }
+      container.innerHTML = '<div class="empty">Nenhum gasto registrado para exibir o gráfico.</div>';
+      return;
+    }
+
+    const total  = Object.values(resumoCategorias).reduce((a, b) => a + b, 0);
+    const cores  = cats.map(c => CORES_CAT[c] || '#8b949e');
+    const valores = cats.map(c => resumoCategorias[c]);
+
+    if (graficoInstance) { graficoInstance.destroy(); graficoInstance = null; }
+
+    const isDark = document.documentElement.getAttribute('data-tema') !== 'claro';
+    const textColor = isDark ? '#8b949e' : '#57606a';
+
+    container.innerHTML = `
+      <div class="chart-grid">
+        <div class="chart-canvas-wrap">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div class="chart-legenda" id="chartLegenda"></div>
+      </div>`;
+
+    const ctx = document.getElementById('donutChart').getContext('2d');
+    graficoInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: cats, datasets: [{ data: valores, backgroundColor: cores, borderWidth: 2, borderColor: isDark ? '#161b22' : '#ffffff', hoverOffset: 8 }] },
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${fmt(ctx.raw)} (${((ctx.raw / total) * 100).toFixed(1)}%)`
+            }
+          }
+        }
+      }
+    });
+
+    const legendaEl = document.getElementById('chartLegenda');
+    legendaEl.innerHTML = cats.map((c, i) => `
+      <div class="legenda-item">
+        <div class="legenda-cor" style="background:${cores[i]}"></div>
+        <span class="legenda-nome">${c}</span>
+        <span class="legenda-valor">${fmt(valores[i])}</span>
+        <span class="legenda-pct">${((valores[i] / total) * 100).toFixed(1)}%</span>
+      </div>`).join('');
+  }
+
+  // ─── PARCELAMENTOS UI ─────────────────────────────────────
+  function atualizarParcelamentos() {
+    const container = document.getElementById('listaParcelamentos');
+
+    if (!parcelamentos.length) {
+      container.innerHTML = '<div class="empty">Nenhum parcelamento cadastrado.</div>';
+      return;
+    }
+
+    container.innerHTML = parcelamentos.map(p => {
+      const finalizado = p.parcelasPagas >= p.totalParcelas;
+      const proxData   = proximaDataParc(p);
+      const pct        = (p.parcelasPagas / p.totalParcelas) * 100;
+      const statusCls  = finalizado ? 'status-finalizado' : 'status-pendente';
+      const statusTxt  = finalizado ? '✓ Concluído' : `Faltam ${p.totalParcelas - p.parcelasPagas}`;
+
+      return `
+        <div class="parc-item">
+          <div class="parc-top">
+            <div>
+              <div class="parc-desc">${p.descricao}</div>
+              <div class="parc-meta">
+                Parcela ${p.parcelasPagas}/${p.totalParcelas} &nbsp;·&nbsp;
+                Próximo: ${proxData ? fmtData(proxData) : '—'} &nbsp;·&nbsp;
+                <span class="${statusCls}">${statusTxt}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="parc-valor">${fmt(p.valorParcela)}/parc</div>
+              <div class="acoes" style="margin-top:8px;justify-content:flex-end">
+                <button class="btn-primary" onclick="marcarParcelaComoPaga(${p.id})" ${finalizado ? 'disabled' : ''}>✓ Pago</button>
+                <button class="btn-danger"  onclick="removerParcelamento(${p.id})">🗑</button>
+              </div>
+            </div>
+          </div>
+          <div class="parc-progress">
+            <div class="parc-progress-label">
+              <span>Progresso</span>
+              <span>${pct.toFixed(0)}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill ${finalizado ? 'ok' : 'alerta'}" style="width:${pct}%"></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── TABELA LANÇAMENTOS ───────────────────────────────────
+  function atualizarLista() {
+    const tbody = document.getElementById('listaMovimentacoes');
+    const itens = lancamentosFiltrados();
+    tbody.innerHTML = '';
+
+    if (!itens.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">Nenhum lançamento encontrado com os filtros atuais.</td></tr>';
+      return;
+    }
+
+    for (const item of itens) {
+      const isParc   = item.origem === 'parcelamento';
+      const origemTxt = isParc ? `Parcela ${item.parcelaAtual}/${item.totalParcelas}` : 'Manual';
+      const valCls   = item.tipo === 'entrada' ? 'valor-pos' : 'valor-neg';
+      const valSinal = item.tipo === 'entrada' ? '+' : '−';
+
+      const acoes = isParc
+        ? `<button class="btn-primary" onclick="marcarParcelaComoPaga(${item.parcelamentoId})">✓ Pago</button>`
+        : `<button class="btn-ghost"   onclick="editarMovimentacao(${item.id})">✎ Editar</button>
+           <button class="btn-danger"  onclick="removerMovimentacao(${item.id})">🗑</button>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.descricao}</td>
+        <td><span class="tag tag-${item.tipo}">${item.tipo}</span></td>
+        <td><span class="tag tag-${item.categoria}">${item.categoria}</span></td>
+        <td style="color:var(--text2)">${fmtData(item.data)}</td>
+        <td><span class="${valCls}">${valSinal} ${fmt(item.valor)}</span></td>
+        <td style="color:var(--text3);font-size:.78rem">${origemTxt}</td>
+        <td><div class="acoes">${acoes}</div></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ─── FILTROS INFO ─────────────────────────────────────────
+  function atualizarInfoFiltros() {
+    const tipo = document.getElementById('filtroTipo').value;
+    const cat  = document.getElementById('filtroCategoria').value;
+    const mes  = document.getElementById('filtroMes').value;
+    const p    = [];
+
+    if (tipo !== 'todos')  p.push(`tipo: ${tipo}`);
+    if (cat  !== 'todas')  p.push(`categoria: ${cat}`);
+    if (mes)               p.push(`mês: ${mes}`);
+
+    document.getElementById('filtrosInfo').textContent =
+      p.length ? `Filtros ativos: ${p.join('  ·  ')}` : 'Exibindo todos os lançamentos.';
+  }
+
+  // ─── ATUALIZAR TELA ───────────────────────────────────────
+  function atualizarTela() {
+    atualizarInfoFiltros();
+    atualizarResumoCards();
+    atualizarAlertas();
+    atualizarProgressBars();
+    renderizarGrafico(calcularTotais().resumoCategorias);
+    atualizarParcelamentos();
+    atualizarLista();
+  }
+
+  // ─── CRUD LANÇAMENTOS ─────────────────────────────────────
+  function salvarMovimentacao() {
+    const editId  = document.getElementById('editandoId').value;
+    const descr   = document.getElementById('descricao').value.trim();
+    const valor   = Number(document.getElementById('valor').value);
+    const tipo    = document.getElementById('tipo').value;
+    const cat     = document.getElementById('categoria').value;
+    const data    = document.getElementById('data').value;
+
+    if (!descr)         return abrirModal('Informe uma descrição.', 'Campo obrigatório', 'erro');
+    if (!valor || valor <= 0) return abrirModal('Informe um valor maior que zero.', 'Valor inválido', 'erro');
+    if (!data)          return abrirModal('Informe a data.', 'Campo obrigatório', 'erro');
+
+    const dados = { descricao: descr, valor, tipo, categoria: cat, data, origem: 'manual' };
+
+    if (editId) {
+      movimentacoes = movimentacoes.map(i => i.id === Number(editId) ? { ...i, ...dados } : i);
+    } else {
+      movimentacoes.push({ id: Date.now(), ...dados });
+    }
+
+    salvarDados();
+    limparFormulario();
+    atualizarTela();
+  }
+
+  function limparFormulario() {
+    ['descricao','valor','data'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('tipo').value      = 'gasto';
+    document.getElementById('categoria').value = 'fixo';
+    document.getElementById('editandoId').value = '';
+    document.getElementById('btnSalvarLancamento').textContent = '＋ Registrar';
+  }
+
+  function editarMovimentacao(id) {
+    const item = movimentacoes.find(m => m.id === id);
+    if (!item) return;
+    document.getElementById('descricao').value = item.descricao;
+    document.getElementById('valor').value     = item.valor;
+    document.getElementById('tipo').value      = item.tipo;
+    document.getElementById('categoria').value = item.categoria;
+    document.getElementById('data').value      = item.data || '';
+    document.getElementById('editandoId').value= item.id;
+    document.getElementById('btnSalvarLancamento').textContent = '✓ Salvar alterações';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function removerMovimentacao(id) {
+    confirmar('Deseja excluir este lançamento?', 'Excluir').then(ok => {
+      if (!ok) return;
+      movimentacoes = movimentacoes.filter(i => i.id !== id);
+      salvarDados();
+      atualizarTela();
+    });
+  }
+
+  async function limparTudo() {
+    const ok = await confirmar('Todos os lançamentos e parcelamentos serão removidos permanentemente.', 'Excluir tudo');
+    if (!ok) return;
+    movimentacoes = [];
+    parcelamentos = [];
+    salvarDados();
+    atualizarTela();
+  }
+
+  // ─── CRUD PARCELAMENTOS ───────────────────────────────────
+  function adicionarParcelamentoAutomatico() {
+    const descr  = document.getElementById('parcDescricao').value.trim();
+    const valor  = Number(document.getElementById('parcValor').value);
+    const cat    = document.getElementById('parcCategoria').value;
+    const total  = Number(document.getElementById('parcTotal').value);
+    const pagas  = Number(document.getElementById('parcPagas').value);
+    const data   = document.getElementById('parcPrimeiraData').value;
+    const dia    = Number(document.getElementById('parcDiaVencimento').value);
+
+    if (!descr || !valor || !data || !total || dia <= 0)
+      return abrirModal('Preencha todos os campos do parcelamento.', 'Dados incompletos', 'erro');
+
+    if (pagas < 0 || pagas > total)
+      return abrirModal('Parcelas pagas deve ficar entre 0 e o total.', 'Valor inválido', 'erro');
+
+    parcelamentos.push({ id: Date.now(), descricao: descr, valorParcela: valor, categoria: cat, totalParcelas: total, parcelasPagas: pagas, primeiraData: data, diaVencimento: dia });
+    salvarDados();
+
+    ['parcDescricao','parcValor','parcPrimeiraData'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('parcCategoria').value = 'divida';
+    document.getElementById('parcTotal').value     = 1;
+    document.getElementById('parcPagas').value     = 0;
+    document.getElementById('parcDiaVencimento').value = 10;
+
+    atualizarTela();
+    abrirModal('Parcelamento cadastrado com sucesso!', 'Concluído', 'sucesso');
+  }
+
+  function marcarParcelaComoPaga(id) {
+    const p = parcelamentos.find(x => x.id === id);
+    if (!p) return;
+    if (p.parcelasPagas >= p.totalParcelas)
+      return abrirModal('Este parcelamento já foi concluído.', 'Informação', 'aviso');
+
+    p.parcelasPagas += 1;
+    salvarDados();
+    atualizarTela();
+    abrirModal(`Parcela registrada! ${p.descricao}: ${p.parcelasPagas}/${p.totalParcelas}`, 'Pagamento registrado', 'sucesso');
+  }
+
+  function removerParcelamento(id) {
+    confirmar('Deseja excluir este parcelamento?', 'Excluir parcelamento').then(ok => {
+      if (!ok) return;
+      parcelamentos = parcelamentos.filter(p => p.id !== id);
+      salvarDados();
+      atualizarTela();
+    });
+  }
+
+  // ─── FILTROS ──────────────────────────────────────────────
+  function limparFiltros() {
+    document.getElementById('filtroTipo').value     = 'todos';
+    document.getElementById('filtroCategoria').value= 'todas';
+    document.getElementById('filtroMes').value      = '';
+    atualizarTela();
+  }
+
+  // ─── EXPORT CSV ───────────────────────────────────────────
+  function exportarCSV() {
+    const itens = lancamentosFiltrados();
+    if (!itens.length) return abrirModal('Nenhum lançamento para exportar.', 'Exportar CSV', 'aviso');
+
+    const linhas = [
+      ['Descrição','Tipo','Categoria','Data','Valor','Origem'],
+      ...itens.map(i => [
+        `"${i.descricao}"`,
+        i.tipo,
+        i.categoria,
+        fmtData(i.data),
+        i.valor.toFixed(2).replace('.', ','),
+        i.origem === 'parcelamento' ? `Parcela ${i.parcelaAtual}/${i.totalParcelas}` : 'Manual'
+      ])
+    ];
+
+    const csv    = linhas.map(l => l.join(';')).join('\n');
+    const blob   = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = `controle-financeiro-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── EXEMPLO ──────────────────────────────────────────────
+  function carregarExemplo() {
+    movimentacoes = [
+      { id: 101, descricao: 'Aluguel',         valor: 800,  tipo: 'gasto',   categoria: 'fixo',        data: '2026-04-30', origem: 'manual' },
+      { id: 102, descricao: 'Escola',           valor: 770,  tipo: 'gasto',   categoria: 'fixo',        data: '2026-04-27', origem: 'manual' },
+      { id: 103, descricao: 'Plano de saúde',   valor: 250,  tipo: 'gasto',   categoria: 'saude',       data: '2026-04-30', origem: 'manual' },
+      { id: 104, descricao: 'Wi-Fi',            valor: 100,  tipo: 'gasto',   categoria: 'fixo',        data: '2026-04-12', origem: 'manual' },
+      { id: 105, descricao: 'Mercado semana 1', valor: 320,  tipo: 'gasto',   categoria: 'alimentacao', data: '2026-04-05', origem: 'manual' },
+      { id: 106, descricao: 'Restaurante',      valor: 120,  tipo: 'gasto',   categoria: 'alimentacao', data: '2026-04-14', origem: 'manual' },
+      { id: 107, descricao: 'Uber',             valor: 45,   tipo: 'gasto',   categoria: 'transporte',  data: '2026-04-10', origem: 'manual' },
+      { id: 108, descricao: 'Extra da esposa',  valor: 100,  tipo: 'entrada', categoria: 'extra',       data: '2026-04-22', origem: 'manual' },
+    ];
+
+    parcelamentos = [
+      { id: 201, descricao: 'Livros',           valorParcela: 276, categoria: 'divida', totalParcelas: 5,  parcelasPagas: 2, primeiraData: '2026-02-10', diaVencimento: 10 },
+      { id: 202, descricao: 'Cama',             valorParcela: 154, categoria: 'divida', totalParcelas: 10, parcelasPagas: 8, primeiraData: '2025-08-04', diaVencimento: 4  },
+      { id: 203, descricao: 'Celular parcelado',valorParcela: 100, categoria: 'fixo',   totalParcelas: 4,  parcelasPagas: 0, primeiraData: '2026-04-12', diaVencimento: 12 },
+    ];
+
+    salvarDados();
+    atualizarTela();
+    abrirModal('Dados de exemplo carregados!', 'Concluído', 'sucesso');
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────
+  atualizarTela();
+</script>
+</body>
+</html>
